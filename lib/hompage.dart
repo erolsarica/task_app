@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:task_app/models/task_model.dart';
+import 'package:task_app/services/database_service.dart';
 
 class HomePage extends StatefulWidget {
   const HomePage({
@@ -10,6 +12,40 @@ class HomePage extends StatefulWidget {
 }
 
 class _HomePageState extends State<HomePage> {
+  final _databaseService = DatabaseService();
+  final _taskTextController = TextEditingController();
+
+  void _getTaskList() async {
+    await _databaseService.getAllTasks();
+    setState(() {});
+  }
+
+  void _addTask() async {
+    if (_taskTextController.text.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          backgroundColor: Colors.deepPurpleAccent,
+          content: Text(
+            'Please enter a task!',
+            style: TextStyle(color: Colors.white, fontSize: 16),
+          ),
+          showCloseIcon: true,
+        ),
+      );
+    } else {
+      await _databaseService.addTask(_taskTextController.text);
+    }
+    setState(() {
+      _taskTextController.clear();
+    });
+  }
+
+  @override
+  void initState() {
+    _getTaskList();
+    super.initState();
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -25,41 +61,95 @@ class _HomePageState extends State<HomePage> {
       body: Center(
         child: Column(
           children: <Widget>[
-            _addTodoWidget(),
-            _todoListWidget(),
+            _taskListWidget(),
+            const Divider(
+              height: 1,
+              thickness: 0,
+              color: Colors.grey,
+            ),
+            _addTaskWidget(),
           ],
         ),
       ),
     );
   }
 
-  Container _addTodoWidget() {
+  Container _addTaskWidget() {
     return Container(
-      margin: const EdgeInsets.all(20),
-      child: const TextField(
+      margin: const EdgeInsets.only(left: 20, right: 20, top: 20, bottom: 40),
+      child: TextField(
+        controller: _taskTextController,
         decoration: InputDecoration(
           suffixIcon: IconButton(
-            onPressed: null,
-            icon: Icon(Icons.add),
+            onPressed: _addTask,
+            icon: const Icon(Icons.add),
           ),
           hintText: 'Enter a task',
-          border: OutlineInputBorder(),
+          border: const OutlineInputBorder(),
           isDense: true,
         ),
       ),
     );
   }
 
-  Expanded _todoListWidget() {
+  Expanded _taskListWidget() {
     return Expanded(
       child: ListView.separated(
-        itemCount: 5,
+        itemCount: _databaseService.currentTasks.length,
         itemBuilder: (BuildContext context, int index) {
+          final Task task = _databaseService.currentTasks[index];
           return ListTile(
-            title: Text('Task ${index + 1}'),
-            trailing: const IconButton(
-              onPressed: null,
-              icon: Icon(Icons.delete),
+            title: Text(
+              task.taskText,
+              style: TextStyle(
+                decoration: task.isCompleted ? TextDecoration.lineThrough : null,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+            subtitle: Text(
+              task.createdAt.toString(),
+              style: const TextStyle(fontSize: 12, color: Colors.grey),
+            ),
+            leading: Checkbox(
+              value: task.isCompleted,
+              onChanged: (bool? value) async {
+                await _databaseService.updateTask(
+                  id: task.id,
+                  text: task.taskText,
+                  isComplated: value!,
+                );
+                setState(() {});
+              },
+            ),
+            trailing: IconButton(
+              onPressed: () async {
+                showDialog(
+                  context: context,
+                  builder: (BuildContext context) {
+                    return AlertDialog(
+                      title: const Text('Delete Task'),
+                      content: const Text('Are you sure?'),
+                      actions: <Widget>[
+                        TextButton(
+                          onPressed: () {
+                            Navigator.pop(context);
+                          },
+                          child: const Text('No'),
+                        ),
+                        TextButton(
+                            onPressed: () async {
+                              await _databaseService.deleteTask(task.id);
+                              setState(() {
+                                Navigator.pop(context);
+                              });
+                            },
+                            child: const Text('Yes')),
+                      ],
+                    );
+                  },
+                );
+              },
+              icon: const Icon(Icons.delete),
             ),
           );
         },
