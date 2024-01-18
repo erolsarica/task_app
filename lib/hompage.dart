@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:task_app/constants/date_formatter.dart';
 import 'package:task_app/models/task_model.dart';
 import 'package:task_app/services/database_service.dart';
+import 'package:toastification/toastification.dart';
 
 class HomePage extends StatefulWidget {
   const HomePage({
@@ -81,8 +83,26 @@ class _HomePageState extends State<HomePage> {
         controller: _taskTextController,
         decoration: InputDecoration(
           suffixIcon: IconButton(
-            onPressed: _addTask,
-            icon: const Icon(Icons.add),
+            onPressed: () {
+              // add task
+              _addTask();
+              // show toast
+              toastification.show(
+                context: context,
+                alignment: Alignment.topCenter,
+                type: ToastificationType.success,
+                style: ToastificationStyle.fillColored,
+                title: const Text('TASK ADDED'),
+                description: const Text('New task added successfully!'),
+                autoCloseDuration: const Duration(seconds: 5),
+              );
+              // dismiss keyboard
+              FocusScope.of(context).unfocus();              
+            },
+            icon: const Icon(
+              Icons.add_box_rounded,
+              size: 26,
+            ),
           ),
           hintText: 'Enter a task',
           border: const OutlineInputBorder(),
@@ -107,7 +127,7 @@ class _HomePageState extends State<HomePage> {
               ),
             ),
             subtitle: Text(
-              task.createdAt.toString(),
+              formatCreatedDate(task.createdAt),
               style: const TextStyle(fontSize: 12, color: Colors.grey),
             ),
             leading: Checkbox(
