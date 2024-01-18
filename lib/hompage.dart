@@ -35,7 +35,18 @@ class _HomePageState extends State<HomePage> {
         ),
       );
     } else {
-      await _databaseService.addTask(_taskTextController.text);
+      await _databaseService.addTask(_taskTextController.text).then((value) {
+        // show toast
+        toastification.show(
+          context: context,
+          alignment: Alignment.topCenter,
+          type: ToastificationType.success,
+          style: ToastificationStyle.fillColored,
+          title: const Text('TASK ADDED'),
+          description: const Text('New task added successfully!'),
+          autoCloseDuration: const Duration(seconds: 5),
+        );
+      });
     }
     setState(() {
       _taskTextController.clear();
@@ -86,18 +97,9 @@ class _HomePageState extends State<HomePage> {
             onPressed: () {
               // add task
               _addTask();
-              // show toast
-              toastification.show(
-                context: context,
-                alignment: Alignment.topCenter,
-                type: ToastificationType.success,
-                style: ToastificationStyle.fillColored,
-                title: const Text('TASK ADDED'),
-                description: const Text('New task added successfully!'),
-                autoCloseDuration: const Duration(seconds: 5),
-              );
+
               // dismiss keyboard
-              FocusScope.of(context).unfocus();              
+              FocusScope.of(context).unfocus();
             },
             icon: const Icon(
               Icons.add_box_rounded,
